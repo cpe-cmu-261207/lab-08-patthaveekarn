@@ -12,16 +12,74 @@ type Task = {
   complete: boolean;
 }
 
+let currentId: number = 1
+
 const tasks: Task[] = []
 
-app.get('/todo', (req, res) => {
+app.get('/me', (req,res) => {
+  return res.json({ name: 'Patthaveekarn Khaekai', code: '630612103'})
+})
 
-  // try to call /todo?q1=data1&q2data2
-  // you can read query parameters with "req.query"
-  console.log(req.query)
-  console.log('hello')
- 
+app.post('/todo', (req: Request<{}, {}, Task>, res) => {
+  if(typeof(req.body.name) != "string" || req.body.name === "" || typeof(req.body.complete) != "boolean"){
+    return res.status(400).json({ status: 'failed', message: 'Invalid input data' })
+  }else{
+    const newTask: Task = {
+      id: currentId,
+      name: req.body.name,
+      complete: req.body.complete
+    }
+    tasks.push(newTask)
+    currentId += 1
+  
+    return res.json({ status: 'success', tasks: tasks })
+  }
+})
+
+app.get('/todo', (req, res) => {
+  if(req.query.order == "asc") {
+    tasks.sort(function(a, b){
+      if(a.name < b.name) { return -1; }
+      if(a.name > b.name) { return 1; }
+      return 0;
+  })
+  }else if(req.query.order == "desc"){
+    tasks.sort(function(a, b){
+      if(a.name > b.name) { return -1; }
+      if(a.name < b.name) { return 1; }
+      return 0;
+  })
+  }
   return res.json({ status: 'success', tasks })
+})
+
+app.put('/todo/:id', (req, res) => {
+  const id = parseInt(req.params.id)
+	const markingTask = tasks.find(x => x.id === id)
+	if (markingTask) {
+		markingTask.complete = !markingTask.complete
+		return res.json({ status: 'success', task: markingTask })
+	} else {
+		return res.status(404).json({
+			status: 'failed',
+			message: 'Id is not found'
+		})
+	}
+})
+
+app.delete('/todo/:id', (req, res) => {
+	const id = parseInt(req.params.id)
+	const foundIndex = tasks.findIndex(x => x.id === id)
+	if (foundIndex > -1){
+		tasks.splice(foundIndex, 1)
+		return res.json({status: 'success', tasks}) 
+	}
+	else{
+		return res.status(404).json({
+			status: 'failed',
+			message: 'Id is not found'
+		})
+	}
 })
 
 
